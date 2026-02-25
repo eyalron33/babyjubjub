@@ -250,23 +250,20 @@ pub fn test_bit(b: &[u8], i: usize) -> bool {
 //     Ok(Point { x: x_fr, y: y_fr })
 // }
 
-#[cfg(not(feature = "aarch64"))]
-#[cfg(not(feature = "wasm"))]
+#[cfg(all(not(target_arch = "aarch64"), not(target_arch = "wasm32")))]
 fn blh(b: &[u8]) -> Vec<u8> {
     let hash = blake_hash::Blake512::digest(b);
     hash.to_vec()
 }
 
-#[cfg(not(feature = "wasm"))]
-#[cfg(feature = "aarch64")]
+#[cfg(all(target_arch = "aarch64", not(target_arch = "wasm32")))]
 fn blh(b: &[u8]) -> Vec<u8> {
     let mut hash = [0; 64];
     blake::hash(512, b, &mut hash).unwrap();
     hash.to_vec()
 }
 
-#[cfg(not(feature = "aarch64"))]
-#[cfg(feature = "wasm")]
+#[cfg(target_arch = "wasm32")]
 fn blh(b: &[u8]) -> Vec<u8> {
     // not-compatible with circomlib implementation, but using Blake2b
     let mut hasher = Blake2b512::new();
