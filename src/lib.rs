@@ -252,12 +252,14 @@ pub fn test_bit(b: &[u8], i: usize) -> bool {
 
 #[cfg(all(not(target_arch = "aarch64"), not(target_arch = "wasm32")))]
 fn blh(b: &[u8]) -> Vec<u8> {
+    println!("x86 blake!");
     let hash = blake_hash::Blake512::digest(b);
     hash.to_vec()
 }
 
 #[cfg(all(target_arch = "aarch64", not(target_arch = "wasm32")))]
 fn blh(b: &[u8]) -> Vec<u8> {
+    println!("aarch64 blake!");
     let mut hash = [0; 64];
     blake::hash(512, b, &mut hash).unwrap();
     hash.to_vec()
@@ -265,6 +267,7 @@ fn blh(b: &[u8]) -> Vec<u8> {
 
 #[cfg(target_arch = "wasm32")]
 fn blh(b: &[u8]) -> Vec<u8> {
+    println!("WASM blake!");
     // not-compatible with circomlib implementation, but using Blake2b
     let mut hasher = Blake2b512::new();
     hasher.update(b);
@@ -322,6 +325,8 @@ impl PrivateKey {
         // hasher.update(sk_raw_bytes);
         // let mut h = hasher.finalize();
 
+        log_hash_backend();
+
         // compatible with circomlib implementation
         let hash: Vec<u8> = blh(&self.key);
         let mut h: Vec<u8> = hash[..32].to_vec();
@@ -340,6 +345,7 @@ impl PrivateKey {
     }
 
     pub fn public(&self) -> Point {
+        log_hash_backend();
         B8.mul_scalar(&self.scalar_key())
     }
 
@@ -457,6 +463,27 @@ pub fn verify(pk: Point, sig: Signature, msg: Fq) -> bool {
         .projective()
         .add(&pk.mul_scalar(&(Fr::from(8_u8) * hm_b)).projective());
     l.equals(r.affine())
+}
+
+pub fn log_hash_backend() {
+    let backend = {
+        #[cfg(target_arch = "wasm32")]
+        {
+            "blake2 (wasm32)"
+        }
+
+        #[cfg(all(target_arch = "aarch64", not(target_arch = "wasm32")))]
+        {
+            "blake (aarch64)"
+        }
+
+        #[cfg(all(not(target_arch = "aarch64"), not(target_arch = "wasm32")))]
+        {
+            "blake-hash (default)"
+        }
+    };
+
+    println!("Hash backend: {}", backend);
 }
 
 #[cfg(test)]
