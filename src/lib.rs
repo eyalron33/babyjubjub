@@ -14,25 +14,29 @@ use ark_std::{rand::Rng, UniformRand};
 
 use poseidon_ark::Poseidon;
 
-#[cfg(not(feature = "aarch64"))]
-#[cfg(not(feature = "wasm"))]
-use blake_hash::Digest; // compatible version with Blake used at circomlib
+// =======================
+// WASM
+// =======================
+#[cfg(target_arch = "wasm32")]
+extern crate blake2;
 
-#[cfg(not(feature = "wasm"))]
-#[cfg(feature = "aarch64")]
-extern crate blake; // compatible version with Blake used at circomlib
-
-#[cfg(not(feature = "aarch64"))]
-#[cfg(feature = "wasm")]
-extern crate blake2; // non-compatible version with Blake used at circomlib
-
-#[cfg(not(feature = "aarch64"))]
-#[cfg(feature = "wasm")]
+#[cfg(target_arch = "wasm32")]
 use blake2::digest::Digest;
 
-#[cfg(not(feature = "aarch64"))]
-#[cfg(feature = "wasm")]
+#[cfg(target_arch = "wasm32")]
 use blake2::Blake2b512;
+
+// =======================
+// Apple Silicon (Mac arm64)
+// =======================
+#[cfg(all(target_arch = "aarch64", not(target_arch = "wasm32")))]
+extern crate blake;
+
+// =======================
+// Everything else (x86_64 etc.)
+// =======================
+#[cfg(all(not(target_arch = "aarch64"), not(target_arch = "wasm32")))]
+use blake_hash::Digest;
 
 use generic_array::GenericArray;
 
